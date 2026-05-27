@@ -96,6 +96,7 @@ function main() {
             // boundary, so this fires reliably for in-page link clicks without needing to
             // patch history.pushState (which would only affect the content script's own world).
             document.addEventListener('turbo:load', tryCorrect);
+            window.addEventListener('popstate', tryCorrect);
         }
     });
 }
