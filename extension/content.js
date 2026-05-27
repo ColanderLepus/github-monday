@@ -4,9 +4,6 @@
 // Description: A browser extension to modify GitHub contribution graphs to start weeks on Monday.
 
 function startWeekOnMonday(table) {
-    // Prevent repeated modification
-    if (table.dataset.weekMondayCorrected) return;
-
     // Get the tbody and check for 7 rows (one per day)
     const tbody = table.querySelector('tbody');
     if (!tbody) {
@@ -58,8 +55,6 @@ function startWeekOnMonday(table) {
             span.setAttribute('style', newStyle);
         }
 
-        // 4. Mark as corrected
-        table.dataset.weekMondayCorrected = 'true';
     } catch (err) {
         console.error('[Contribution Graph Realignment] Failed during DOM manipulation:', err);
     }
@@ -67,46 +62,19 @@ function startWeekOnMonday(table) {
 
 // --- Initialization and MutationObserver Logic ---
 
-function observeTable() {
-    // Try to correct immediately
+function tryCorrect() {
     const table = document.querySelector('.ContributionCalendar-grid');
-    if (table) {
-        startWeekOnMonday(table);
-    }
-
-    // Observe for future changes
-    const observer = new MutationObserver(() => {
-        const table = document.querySelector('.ContributionCalendar-grid');
-        if (table) {
-            startWeekOnMonday(table);
-        }
-    });
-
-    // Start observing the body for changes
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-    });
-
-    // Disconnect observer if .js-yearly-contributions is not present after 5 seconds
-    setTimeout(() => {
-        if (!document.querySelector('.js-yearly-contributions')) {
-            observer.disconnect();
-        }
-    }, 5000);
+    if (table) startWeekOnMonday(table);
 }
 
-// Safe URL change detection
-function onUrlChange(callback) {
-    let lastUrl = location.href;
-    const checkUrl = () => {
-        if (location.href !== lastUrl) {
-            lastUrl = location.href;
-            callback();
-        }
-    };
-    window.addEventListener('popstate', checkUrl);
-    setInterval(checkUrl, 500);
+function startObserver() {
+    // Watch for the contribution graph being added/replaced anywhere in the page.
+    // The observer is created once and kept alive — disconnecting it prematurely
+    // breaks realignment when navigating from a non-profile page to a profile page.
+    const observer = new MutationObserver(tryCorrect);
+    // Observe documentElement, not body — Turbo replaces the entire <body> element on
+    // navigation, which would leave an observer on document.body watching a detached node.
+    observer.observe(document.documentElement, { childList: true, subtree: true });
 }
 
 // Main entry point
@@ -119,10 +87,12 @@ function main() {
     // Check if realignment is enabled before running
     storage.sync.get({ enableRealignment: true }, (items) => {
         if (items.enableRealignment) {
-            observeTable();
-            onUrlChange(() => {
-                observeTable();
-            });
+            tryCorrect();
+            startObserver();
+            // GitHub uses Turbo for SPA navigation. DOM events cross the MV3 isolated world
+            // boundary, so this fires reliably for in-page link clicks without needing to
+            // patch history.pushState (which would only affect the content script's own world).
+            document.addEventListener('turbo:load', tryCorrect);
         }
     });
 }
