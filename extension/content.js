@@ -98,15 +98,16 @@ function observeTable() {
 
 // Safe URL change detection
 function onUrlChange(callback) {
-    let lastUrl = location.href;
-    const checkUrl = () => {
-        if (location.href !== lastUrl) {
-            lastUrl = location.href;
+    // Wrap history methods so SPA navigations (pushState/replaceState) also trigger the callback.
+    // popstate only fires for back/forward; GitHub uses pushState for in-page link clicks.
+    for (const method of ['pushState', 'replaceState']) {
+        const original = history[method];
+        history[method] = function (...args) {
+            original.apply(this, args);
             callback();
-        }
-    };
-    window.addEventListener('popstate', checkUrl);
-    setInterval(checkUrl, 500);
+        };
+    }
+    window.addEventListener('popstate', callback);
 }
 
 // Main entry point
