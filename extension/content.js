@@ -67,47 +67,17 @@ function startWeekOnMonday(table) {
 
 // --- Initialization and MutationObserver Logic ---
 
-function observeTable() {
-    // Try to correct immediately
+function tryCorrect() {
     const table = document.querySelector('.ContributionCalendar-grid');
-    if (table) {
-        startWeekOnMonday(table);
-    }
-
-    // Observe for future changes
-    const observer = new MutationObserver(() => {
-        const table = document.querySelector('.ContributionCalendar-grid');
-        if (table) {
-            startWeekOnMonday(table);
-        }
-    });
-
-    // Start observing the body for changes
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-    });
-
-    // Disconnect observer if .js-yearly-contributions is not present after 5 seconds
-    setTimeout(() => {
-        if (!document.querySelector('.js-yearly-contributions')) {
-            observer.disconnect();
-        }
-    }, 5000);
+    if (table) startWeekOnMonday(table);
 }
 
-// Safe URL change detection
-function onUrlChange(callback) {
-    // Wrap history methods so SPA navigations (pushState/replaceState) also trigger the callback.
-    // popstate only fires for back/forward; GitHub uses pushState for in-page link clicks.
-    for (const method of ['pushState', 'replaceState']) {
-        const original = history[method];
-        history[method] = function (...args) {
-            original.apply(this, args);
-            callback();
-        };
-    }
-    window.addEventListener('popstate', callback);
+function startObserver() {
+    // Watch for the contribution graph being added/replaced anywhere in the page.
+    // The observer is created once and kept alive — disconnecting it prematurely
+    // breaks realignment when navigating from a non-profile page to a profile page.
+    const observer = new MutationObserver(tryCorrect);
+    observer.observe(document.body, { childList: true, subtree: true });
 }
 
 // Main entry point
@@ -120,10 +90,12 @@ function main() {
     // Check if realignment is enabled before running
     storage.sync.get({ enableRealignment: true }, (items) => {
         if (items.enableRealignment) {
-            observeTable();
-            onUrlChange(() => {
-                observeTable();
-            });
+            tryCorrect();
+            startObserver();
+            // GitHub uses Turbo for SPA navigation. DOM events cross the MV3 isolated world
+            // boundary, so this fires reliably for in-page link clicks without needing to
+            // patch history.pushState (which would only affect the content script's own world).
+            document.addEventListener('turbo:load', tryCorrect);
         }
     });
 }
