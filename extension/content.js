@@ -4,9 +4,6 @@
 // Description: A browser extension to modify GitHub contribution graphs to start weeks on Monday.
 
 function startWeekOnMonday(table) {
-    // Prevent repeated modification
-    if (table.dataset.weekMondayCorrected) return;
-
     // Get the tbody and check for 7 rows (one per day)
     const tbody = table.querySelector('tbody');
     if (!tbody) {
@@ -58,8 +55,6 @@ function startWeekOnMonday(table) {
             span.setAttribute('style', newStyle);
         }
 
-        // 4. Mark as corrected
-        table.dataset.weekMondayCorrected = 'true';
     } catch (err) {
         console.error('[Contribution Graph Realignment] Failed during DOM manipulation:', err);
     }
@@ -77,7 +72,9 @@ function startObserver() {
     // The observer is created once and kept alive — disconnecting it prematurely
     // breaks realignment when navigating from a non-profile page to a profile page.
     const observer = new MutationObserver(tryCorrect);
-    observer.observe(document.body, { childList: true, subtree: true });
+    // Observe documentElement, not body — Turbo replaces the entire <body> element on
+    // navigation, which would leave an observer on document.body watching a detached node.
+    observer.observe(document.documentElement, { childList: true, subtree: true });
 }
 
 // Main entry point
@@ -96,7 +93,6 @@ function main() {
             // boundary, so this fires reliably for in-page link clicks without needing to
             // patch history.pushState (which would only affect the content script's own world).
             document.addEventListener('turbo:load', tryCorrect);
-            window.addEventListener('popstate', tryCorrect);
         }
     });
 }
