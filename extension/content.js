@@ -42,9 +42,13 @@ function startWeekOnMonday(table) {
         const sundayRow = tbody.rows[0];
         tbody.appendChild(sundayRow);
 
-        // All checks on lastRow.cells are redundant; we validated cell count before moving the row.
-
         // 2. Shift Sunday row's contribution data
+        // By moving the Sunday row from the top to the bottom, the Sundays in each
+        // column become "backward" (they represent the date *before* the Monday above them).
+        // We delete the first cell (index 1, as index 0 is the label) so that
+        // all subsequent Sundays shift left by one column.
+        // This ensures that the Sunday at the bottom of a column is the one
+        // that *follows* the Monday at the top of that same column.
         const lastRow = tbody.rows[tbody.rows.length - 1];
         lastRow.deleteCell(1);
 
