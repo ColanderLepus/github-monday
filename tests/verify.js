@@ -182,10 +182,15 @@ if (rows[6].cells.length !== 2) {
 }
 console.log('SUCCESS: Extra cell deleted from shifted row.');
 
-// 4. Check Correction Marker
-if (table.dataset.weekMondayCorrected !== 'true') {
-    throw new Error('Verification Failed: Dataset marker not set.');
+// 4. Check idempotency — calling again must be a no-op (guard relies on span text, not a dataset flag)
+startWeekOnMonday(table);
+rows = tbody.rows;
+if (rows[0].cells[0].querySelector('span[aria-hidden="true"]').textContent !== 'Mon') {
+    throw new Error('Idempotency Failed: Second call changed row order.');
 }
-console.log('SUCCESS: Correction marker set.');
+if (rows[6].cells[0].querySelector('span[aria-hidden="true"]').textContent !== 'Sun') {
+    throw new Error('Idempotency Failed: Second call moved Sun row again.');
+}
+console.log('SUCCESS: Second call is a no-op (idempotent).');
 
 console.log('All checks passed.');
