@@ -3,8 +3,12 @@
 // Author: Temporal Correction Initiative
 // Description: A browser extension to modify GitHub contribution graphs to start weeks on Monday.
 
+// --- Contribution Graph Realignment ---------------------------------------------------------------------------------
+// #region
+
 function startWeekOnMonday(table) {
-    // Get the tbody and check for 7 rows (one per day)
+
+    // Guard: Ensure tbody exists and has 7 rows (one for each day of the week)
     const tbody = table.querySelector('tbody');
     if (!tbody) {
         console.error('[Contribution Graph Realignment] Failed: No <tbody> found in contribution graph table.');
@@ -22,16 +26,20 @@ function startWeekOnMonday(table) {
         return;
     }
 
+    // Guard: Check for the presence of the "Sun" label in the first cell of the first row
     const span = firstRow.cells[0].querySelector('span[aria-hidden="true"]');
     if (!span) {
         console.error('[Contribution Graph Realignment] Failed: No label span found in first row.');
         return;
     }
+
+    // Already Monday or not Sunday, skip correction (not an error)
     if (span.textContent.trim() !== 'Sun') {
-        // Already Monday or not Sunday, skip correction (not an error)
         return;
     }
-    // Check that the Sunday row has at least 2 cells before proceeding
+
+    // Guard: Ensure the first row has enough cells to shift contribution data
+    // (at least 2: one for the label and one for contributions)
     if (firstRow.cells.length < 2) {
         console.error('[Contribution Graph Realignment] Failed: Sunday row does not have enough cells to shift contribution data.');
         return;
@@ -63,8 +71,10 @@ function startWeekOnMonday(table) {
         console.error('[Contribution Graph Realignment] Failed during DOM manipulation:', err);
     }
 }
+// #endregion
 
-// --- Initialization and MutationObserver Logic ---
+// --- Initialization and MutationObserver Logic ----------------------------------------------------------------------
+// #region
 
 function tryCorrect() {
     const table = document.querySelector('.ContributionCalendar-grid');
@@ -76,12 +86,15 @@ function startObserver() {
     // The observer is created once and kept alive — disconnecting it prematurely
     // breaks realignment when navigating from a non-profile page to a profile page.
     const observer = new MutationObserver(tryCorrect);
+
     // Observe documentElement, not body — Turbo replaces the entire <body> element on
     // navigation, which would leave an observer on document.body watching a detached node.
     observer.observe(document.documentElement, { childList: true, subtree: true });
 }
+// #endregion
 
-// Main entry point
+// --- Main entry point -----------------------------------------------------------------------------------------------
+// #region
 
 // Use browser.storage if available (preferred in modern browsers), otherwise fall back to chrome.storage.
 // This ensures compatibility across Chrome, Firefox, and other browsers supporting the WebExtension API.
@@ -107,3 +120,4 @@ if (document.readyState === 'loading') {
 } else {
     main();
 }
+// #endregion
