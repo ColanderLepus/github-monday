@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # Fetch the full git history so we can see all existing tags below
           fetch-depth: 0
@@ -55,7 +55,7 @@ jobs:
       # The GITHUB_TOKEN is provided automatically by GitHub Actions — no setup needed.
       - name: Create GitHub Release
         if: steps.tag_check.outputs.exists == 'false'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ steps.version.outputs.value }}
           files: contribution-graph-realignment-tool-v${{ steps.version.outputs.value }}.zip
