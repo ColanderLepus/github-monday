@@ -113,7 +113,6 @@ function startObserver() {
 const storage = typeof browser !== 'undefined' && browser.storage ? browser.storage : chrome.storage;
 
 function main() {
-    // Check if realignment is enabled before running
     storage.sync.get({ enableRealignment: true }, (items) => {
         if (items.enableRealignment) {
             tryCorrect();
@@ -126,7 +125,6 @@ function main() {
     });
 }
 
-// Run main when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', main);
 } else {
