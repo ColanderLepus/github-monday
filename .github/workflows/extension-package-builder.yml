@@ -27,7 +27,7 @@ jobs:
 
       # 2. Create the GitHub release and attach the ZIP file
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: ${{ env.ZIP_NAME }}
           name: Browser Extension ${{ github.ref_name }}
