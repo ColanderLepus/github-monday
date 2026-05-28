@@ -60,6 +60,7 @@ jobs:
           tag_name: v${{ steps.version.outputs.value }}
           files: contribution-graph-realignment-tool-v${{ steps.version.outputs.value }}.zip
           name: Browser Extension v${{ steps.version.outputs.value }}
+          generate_release_notes: true
           draft: false
           prerelease: false
         env:
