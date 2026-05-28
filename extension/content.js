@@ -3,6 +3,9 @@
 // Author: Temporal Correction Initiative
 // Description: A browser extension to modify GitHub contribution graphs to start weeks on Monday.
 
+// --- Contribution Graph Realignment ---------------------------------------------------------------------------------
+// #region
+
 function startWeekOnMonday(table) {
     // Get the tbody and check for 7 rows (one per day)
     const tbody = table.querySelector('tbody');
@@ -63,8 +66,10 @@ function startWeekOnMonday(table) {
         console.error('[Contribution Graph Realignment] Failed during DOM manipulation:', err);
     }
 }
+// #endregion
 
-// --- Initialization and MutationObserver Logic ---
+// --- Initialization and MutationObserver Logic ----------------------------------------------------------------------
+// #region
 
 function tryCorrect() {
     const table = document.querySelector('.ContributionCalendar-grid');
@@ -80,8 +85,10 @@ function startObserver() {
     // navigation, which would leave an observer on document.body watching a detached node.
     observer.observe(document.documentElement, { childList: true, subtree: true });
 }
+// #endregion
 
-// Main entry point
+// --- Main entry point -----------------------------------------------------------------------------------------------
+// #region
 
 // Use browser.storage if available (preferred in modern browsers), otherwise fall back to chrome.storage.
 // This ensures compatibility across Chrome, Firefox, and other browsers supporting the WebExtension API.
@@ -107,3 +114,4 @@ if (document.readyState === 'loading') {
 } else {
     main();
 }
+// #endregion
