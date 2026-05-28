@@ -7,7 +7,8 @@
 // #region
 
 function startWeekOnMonday(table) {
-    // Get the tbody and check for 7 rows (one per day)
+
+    // Guard: Ensure tbody exists and has 7 rows (one for each day of the week)
     const tbody = table.querySelector('tbody');
     if (!tbody) {
         console.error('[Contribution Graph Realignment] Failed: No <tbody> found in contribution graph table.');
@@ -25,16 +26,20 @@ function startWeekOnMonday(table) {
         return;
     }
 
+    // Guard: Check for the presence of the "Sun" label in the first cell of the first row
     const span = firstRow.cells[0].querySelector('span[aria-hidden="true"]');
     if (!span) {
         console.error('[Contribution Graph Realignment] Failed: No label span found in first row.');
         return;
     }
+
+    // Already Monday or not Sunday, skip correction (not an error)
     if (span.textContent.trim() !== 'Sun') {
-        // Already Monday or not Sunday, skip correction (not an error)
         return;
     }
-    // Check that the Sunday row has at least 2 cells before proceeding
+
+    // Guard: Ensure the first row has enough cells to shift contribution data
+    // (at least 2: one for the label and one for contributions)
     if (firstRow.cells.length < 2) {
         console.error('[Contribution Graph Realignment] Failed: Sunday row does not have enough cells to shift contribution data.');
         return;
