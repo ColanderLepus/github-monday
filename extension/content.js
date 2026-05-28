@@ -86,6 +86,7 @@ function startObserver() {
     // The observer is created once and kept alive — disconnecting it prematurely
     // breaks realignment when navigating from a non-profile page to a profile page.
     const observer = new MutationObserver(tryCorrect);
+
     // Observe documentElement, not body — Turbo replaces the entire <body> element on
     // navigation, which would leave an observer on document.body watching a detached node.
     observer.observe(document.documentElement, { childList: true, subtree: true });
