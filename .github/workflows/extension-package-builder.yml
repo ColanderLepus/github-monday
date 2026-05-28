@@ -1,36 +1,65 @@
 name: Extension Package Builder
 
+# Runs on every push to main. Only creates a release if the version in
+# extension/manifest.json has been bumped to a value that doesn't already
+# have a matching git tag. To release a new version, just update "version"
+# in manifest.json, commit, and push — this workflow handles the rest.
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    # Needed so the workflow can create tags and GitHub Releases
     permissions:
       contents: write
-
-    env:
-      ZIP_NAME: contribution-graph-realignment-tool-${{ github.ref_name }}.zip
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Fetch the full git history so we can see all existing tags below
+          fetch-depth: 0
 
-      # 1. Package the extension as standard ZIP file
+      # Read the "version" field from the extension manifest and store it
+      # so later steps can reference it as ${{ steps.version.outputs.value }}
+      - name: Read version from manifest
+        id: version
+        run: |
+          VERSION=$(jq -r '.version' extension/manifest.json)
+          echo "value=$VERSION" >> $GITHUB_OUTPUT
+
+      # Check whether a tag like "v1.2.0" already exists for this version.
+      # If it does, the version hasn't changed and we skip the release steps.
+      - name: Check if tag already exists
+        id: tag_check
+        run: |
+          if git tag | grep -qx "v${{ steps.version.outputs.value }}"; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Zip the entire extension/ folder — this is the file uploaded to the
+      # Chrome Web Store / Firefox Add-ons. Only runs if the tag is new.
       - name: Create Extension Package
+        if: steps.tag_check.outputs.exists == 'false'
         run: |
           cd extension
-          zip -r ../$ZIP_NAME .
+          zip -r ../contribution-graph-realignment-tool-v${{ steps.version.outputs.value }}.zip .
 
-      # 2. Create the GitHub release and attach the ZIP file
+      # Create the GitHub Release, attach the ZIP, and create the git tag.
+      # The GITHUB_TOKEN is provided automatically by GitHub Actions — no setup needed.
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        if: steps.tag_check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.ZIP_NAME }}
-          name: Browser Extension ${{ github.ref_name }}
+          tag_name: v${{ steps.version.outputs.value }}
+          files: contribution-graph-realignment-tool-v${{ steps.version.outputs.value }}.zip
+          name: Browser Extension v${{ steps.version.outputs.value }}
           draft: false
           prerelease: false
         env:
