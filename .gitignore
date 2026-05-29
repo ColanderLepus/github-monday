@@ -1,1 +1,5 @@
+# Claude Code project settings and memory
 .claude/
+
+# Release archives produced locally for store submission
+*.zip
