@@ -7,69 +7,81 @@
 // #region
 
 function startWeekOnMonday(table) {
-
-    // Guard: Ensure tbody exists and has 7 rows (one for each day of the week)
     const tbody = table.querySelector('tbody');
     if (!tbody) {
         console.error('[Contribution Graph Realignment] Failed: No <tbody> found in contribution graph table.');
         return;
     }
-    if (tbody.rows.length !== 7) {
-        console.error('[Contribution Graph Realignment] Failed: Contribution graph does not have 7 rows. Found:', tbody.rows.length);
+
+    if (!validateGraph(tbody)) return;
+
+    const sundayRow = getSundayRow(tbody);
+    if (!sundayRow) {
+        console.error('[Contribution Graph Realignment] Failed: No Sunday row found in contribution graph.');
         return;
     }
 
-    // Guard: Only move the row if the first cell of the first row is labeled 'Sun'
-    const firstRow = tbody.rows[0];
-    if (firstRow.cells.length === 0) {
-        console.error('[Contribution Graph Realignment] Failed: First row has no cells.');
-        return;
-    }
-
-    // Guard: Check for the presence of the "Sun" label in the first cell of the first row
-    const span = firstRow.cells[0].querySelector('span[aria-hidden="true"]');
-    if (!span) {
-        console.error('[Contribution Graph Realignment] Failed: No label span found in first row.');
-        return;
-    }
-
-    // Already Monday or not Sunday, skip correction (not an error)
-    if (span.textContent.trim() !== 'Sun') {
-        return;
-    }
-
-    // Guard: Ensure the first row has enough cells to shift contribution data
-    // (at least 2: one for the label and one for contributions)
-    if (firstRow.cells.length < 2) {
-        console.error('[Contribution Graph Realignment] Failed: Sunday row does not have enough cells to shift contribution data.');
-        return;
-    }
+    // Already corrected — Sunday has been moved to the bottom
+    if (tbody.rows[0] !== sundayRow) return;
 
     try {
-        // 1. Move the Sunday row (index 0) to the bottom.
-        const sundayRow = tbody.rows[0];
-        tbody.appendChild(sundayRow);
-
-        // 2. Shift Sunday row's contribution data
-        // By moving the Sunday row from the top to the bottom, the Sundays in each
-        // column become "backward" (they represent the date *before* the Monday above them).
-        // We delete the first cell (index 1, as index 0 is the label) so that
-        // all subsequent Sundays shift left by one column.
-        // This ensures that the Sunday at the bottom of a column is the one
-        // that *follows* the Monday at the top of that same column.
-        const lastRow = tbody.rows[tbody.rows.length - 1];
-        lastRow.deleteCell(1);
-
-        // 3. Fix the visibility of the "Sun" label
-        const span = lastRow.cells[0].querySelector('span[aria-hidden="true"]');
-        if (span && span.hasAttribute('style')) {
-            const newStyle = span.getAttribute('style').replace('Circle(0)', 'None');
-            span.setAttribute('style', newStyle);
-        }
-
+        realignGraph(tbody, sundayRow);
     } catch (err) {
         console.error('[Contribution Graph Realignment] Failed during DOM manipulation:', err);
     }
+}
+
+function validateGraph(tbody) {
+    if (tbody.rows.length !== 7) {
+        console.error('[Contribution Graph Realignment] Failed: Contribution graph does not have 7 rows. Found:', tbody.rows.length);
+        return false;
+    }
+
+    const firstRow = tbody.rows[0];
+
+    // Guard before calling getLabelSpan — needs at least a label cell and one data cell
+    if (firstRow.cells.length < 2) {
+        console.error('[Contribution Graph Realignment] Failed: Sunday row does not have enough cells to shift contribution data.');
+        return false;
+    }
+
+    if (!getLabelSpan(firstRow)) {
+        console.error('[Contribution Graph Realignment] Failed: No label span found in first row.');
+        return false;
+    }
+
+    return true;
+}
+
+function realignGraph(tbody, sundayRow) {
+    // 1. Move the Sunday row to the bottom.
+    tbody.appendChild(sundayRow);
+
+    // 2. Shift Sunday row's contribution data.
+    // By moving the Sunday row from the top to the bottom, the Sundays in each
+    // column become "backward" (they represent the date *before* the Monday above them).
+    // We delete the first data cell (index 1) so that all subsequent Sundays shift
+    // left by one column, ensuring each Sunday follows the Monday at the top of that column.
+    sundayRow.deleteCell(1);
+
+    // 3. Fix the visibility of the "Sun" label.
+    const span = getLabelSpan(sundayRow);
+    if (span && span.hasAttribute('style')) {
+        const newStyle = span.getAttribute('style').replace('Circle(0)', 'None');
+        span.setAttribute('style', newStyle);
+    }
+}
+
+function getSundayRow(tbody) {
+    for (const row of tbody.rows) {
+        const span = getLabelSpan(row);
+        if (span && span.textContent.trim() === 'Sun') return row;
+    }
+    return null;
+}
+
+function getLabelSpan(row) {
+    return row.cells[0].querySelector('span[aria-hidden="true"]');
 }
 // #endregion
 
@@ -101,7 +113,6 @@ function startObserver() {
 const storage = typeof browser !== 'undefined' && browser.storage ? browser.storage : chrome.storage;
 
 function main() {
-    // Check if realignment is enabled before running
     storage.sync.get({ enableRealignment: true }, (items) => {
         if (items.enableRealignment) {
             tryCorrect();
@@ -114,7 +125,6 @@ function main() {
     });
 }
 
-// Run main when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', main);
 } else {
