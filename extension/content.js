@@ -65,7 +65,7 @@ function realignGraph(tbody, sundayRow) {
     sundayRow.deleteCell(1);
 
     // 3. Fix the visibility of the "Sun" label.
-    const span = getLabelSpan(sundayRow);
+    const span = getDayLabel(sundayRow);
     if (span && span.hasAttribute('style')) {
         const newStyle = span.getAttribute('style').replace('Circle(0)', 'None');
         span.setAttribute('style', newStyle);
@@ -80,7 +80,7 @@ function getSundayRow(tbody) {
     return null;
 }
 
-function getLabelSpan(row) {
+function getDayLabel(row) {
     return row.cells[0]?.querySelector('span[aria-hidden="true"]') ?? null;
 }
 // #endregion
