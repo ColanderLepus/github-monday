@@ -38,8 +38,6 @@ function validateGraph(tbody) {
     }
 
     const firstRow = tbody.rows[0];
-
-    // Guard before calling getLabelSpan — needs at least a label cell and one data cell
     if (firstRow.cells.length < 2) {
         console.error('[Contribution Graph Realignment] Failed: Sunday row does not have enough cells to shift contribution data.');
         return false;
