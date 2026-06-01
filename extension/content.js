@@ -6,13 +6,13 @@
 // --- Contribution Graph Realignment ---------------------------------------------------------------------------------
 // #region
 
-function startWeekOnMonday(table) {
     const tbody = table.querySelector('tbody');
     if (!tbody) {
         console.error('[Contribution Graph Realignment] Failed: No <tbody> found in contribution graph table.');
         return;
     }
 
+function applyCorrection() {
     if (!validateGraph(tbody)) return;
 
     const sundayRow = getSundayRow(tbody);
@@ -86,16 +86,11 @@ function getDayLabel(row) {
 // --- Initialization and MutationObserver Logic ----------------------------------------------------------------------
 // #region
 
-function tryCorrect() {
-    const table = document.querySelector('.ContributionCalendar-grid');
-    if (table) startWeekOnMonday(table);
-}
-
 function startObserver() {
     // Watch for the contribution graph being added/replaced anywhere in the page.
     // The observer is created once and kept alive — disconnecting it prematurely
     // breaks realignment when navigating from a non-profile page to a profile page.
-    const observer = new MutationObserver(tryCorrect);
+    const observer = new MutationObserver(applyCorrection);
 
     // Observe documentElement, not body — Turbo replaces the entire <body> element on
     // navigation, which would leave an observer on document.body watching a detached node.
@@ -113,12 +108,12 @@ const storage = typeof browser !== 'undefined' && browser.storage ? browser.stor
 function main() {
     storage.sync.get({ enableRealignment: true }, (items) => {
         if (items.enableRealignment) {
-            tryCorrect();
+            applyCorrection();
             startObserver();
             // GitHub uses Turbo for SPA navigation. DOM events cross the MV3 isolated world
             // boundary, so this fires reliably for in-page link clicks without needing to
             // patch history.pushState (which would only affect the content script's own world).
-            document.addEventListener('turbo:load', tryCorrect);
+            document.addEventListener('turbo:load', applyCorrection);
         }
     });
 }
