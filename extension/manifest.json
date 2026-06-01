@@ -4,7 +4,6 @@
     "short_name": "C.G.R.T.",
     "version": "0.4.0",
     "description": "A browser extension by The Temporal Correction Initiative. Dedicated to restoring chronological integrity to GitHub's contribution graph. Because Monday comes first!",
-    "author": "The Temporal Correction Initiative",
     "minimum_chrome_version": "88",
     "permissions": [
         "storage"
