@@ -6,47 +6,36 @@
 // --- Contribution Graph Realignment ---------------------------------------------------------------------------------
 // #region
 
-function startWeekOnMonday(table) {
-    const tbody = table.querySelector('tbody');
-    if (!tbody) {
-        console.error('[Contribution Graph Realignment] Failed: No <tbody> found in contribution graph table.');
-        return;
-    }
-
+function applyCorrection() {
+    const tbody = document.querySelector('.ContributionCalendar-grid tbody');
     if (!validateGraph(tbody)) return;
 
-    const sundayRow = getSundayRow(tbody);
-    if (!sundayRow) {
-        console.error('[Contribution Graph Realignment] Failed: No Sunday row found in contribution graph.');
-        return;
-    }
-
-    // Already corrected — Sunday has been moved to the bottom
-    if (tbody.rows[0] !== sundayRow) return;
-
     try {
-        realignGraph(tbody, sundayRow);
+        realignGraph(tbody, tbody.rows[0]);
     } catch (err) {
         console.error('[Contribution Graph Realignment] Failed during DOM manipulation:', err);
     }
 }
 
 function validateGraph(tbody) {
+    // No error logged — the MutationObserver fires on every DOM change across all pages,
+    // so the contribution graph being absent is the normal case, not a failure.
+    if (!tbody) return false;
+
     if (tbody.rows.length !== 7) {
         console.error('[Contribution Graph Realignment] Failed: Contribution graph does not have 7 rows. Found:', tbody.rows.length);
         return false;
     }
 
     const firstRow = tbody.rows[0];
+    const span = getDayLabel(firstRow);
 
-    // Guard before calling getLabelSpan — needs at least a label cell and one data cell
+    // Silent return — row 0 not being Sunday means the graph is already corrected.
+    // This fires on every subsequent mutation after realignment, so logging here would spam the console.
+    if (!span || span.textContent.trim() !== 'Sun') return false;
+
     if (firstRow.cells.length < 2) {
         console.error('[Contribution Graph Realignment] Failed: Sunday row does not have enough cells to shift contribution data.');
-        return false;
-    }
-
-    if (!getLabelSpan(firstRow)) {
-        console.error('[Contribution Graph Realignment] Failed: No label span found in first row.');
         return false;
     }
 
@@ -65,22 +54,14 @@ function realignGraph(tbody, sundayRow) {
     sundayRow.deleteCell(1);
 
     // 3. Fix the visibility of the "Sun" label.
-    const span = getLabelSpan(sundayRow);
+    const span = getDayLabel(sundayRow);
     if (span && span.hasAttribute('style')) {
         const newStyle = span.getAttribute('style').replace('Circle(0)', 'None');
         span.setAttribute('style', newStyle);
     }
 }
 
-function getSundayRow(tbody) {
-    for (const row of tbody.rows) {
-        const span = getLabelSpan(row);
-        if (span && span.textContent.trim() === 'Sun') return row;
-    }
-    return null;
-}
-
-function getLabelSpan(row) {
+function getDayLabel(row) {
     return row.cells[0]?.querySelector('span[aria-hidden="true"]') ?? null;
 }
 // #endregion
@@ -88,16 +69,11 @@ function getLabelSpan(row) {
 // --- Initialization and MutationObserver Logic ----------------------------------------------------------------------
 // #region
 
-function tryCorrect() {
-    const table = document.querySelector('.ContributionCalendar-grid');
-    if (table) startWeekOnMonday(table);
-}
-
 function startObserver() {
     // Watch for the contribution graph being added/replaced anywhere in the page.
     // The observer is created once and kept alive — disconnecting it prematurely
     // breaks realignment when navigating from a non-profile page to a profile page.
-    const observer = new MutationObserver(tryCorrect);
+    const observer = new MutationObserver(applyCorrection);
 
     // Observe documentElement, not body — Turbo replaces the entire <body> element on
     // navigation, which would leave an observer on document.body watching a detached node.
@@ -115,12 +91,12 @@ const storage = typeof browser !== 'undefined' && browser.storage ? browser.stor
 function main() {
     storage.sync.get({ enableRealignment: true }, (items) => {
         if (items.enableRealignment) {
-            tryCorrect();
+            applyCorrection();
             startObserver();
             // GitHub uses Turbo for SPA navigation. DOM events cross the MV3 isolated world
             // boundary, so this fires reliably for in-page link clicks without needing to
             // patch history.pushState (which would only affect the content script's own world).
-            document.addEventListener('turbo:load', tryCorrect);
+            document.addEventListener('turbo:load', applyCorrection);
         }
     });
 }
