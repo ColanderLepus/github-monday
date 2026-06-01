@@ -18,10 +18,9 @@ function applyCorrection() {
 }
 
 function validateGraph(tbody) {
-    if (!tbody) {
-        console.error('[Contribution Graph Realignment] Failed: Contribution graph tbody not found.');
-        return false;
-    }
+    // No error logged — the MutationObserver fires on every DOM change across all pages,
+    // so the contribution graph being absent is the normal case, not a failure.
+    if (!tbody) return false;
 
     if (tbody.rows.length !== 7) {
         console.error('[Contribution Graph Realignment] Failed: Contribution graph does not have 7 rows. Found:', tbody.rows.length);
