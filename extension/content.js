@@ -39,10 +39,9 @@ function validateGraph(tbody) {
         return false;
     }
 
-    if (span.textContent.trim() !== 'Sun') {
-        console.error('[Contribution Graph Realignment] Failed: First row is not labeled "Sun". Found:', span.textContent.trim());
-        return false;
-    }
+    // Silent return — row 0 not being Sunday means the graph is already corrected.
+    // This fires on every subsequent mutation after realignment, so logging here would spam the console.
+    if (span.textContent.trim() !== 'Sun') return false;
 
     return true;
 }
