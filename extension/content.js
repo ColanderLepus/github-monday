@@ -6,32 +6,23 @@
 // --- Contribution Graph Realignment ---------------------------------------------------------------------------------
 // #region
 
-    const tbody = table.querySelector('tbody');
-    if (!tbody) {
-        console.error('[Contribution Graph Realignment] Failed: No <tbody> found in contribution graph table.');
-        return;
-    }
-
 function applyCorrection() {
+    const tbody = document.querySelector('.ContributionCalendar-grid tbody');
     if (!validateGraph(tbody)) return;
 
-    const sundayRow = getSundayRow(tbody);
-    if (!sundayRow) {
-        console.error('[Contribution Graph Realignment] Failed: No Sunday row found in contribution graph.');
-        return;
-    }
-
-    // Already corrected — Sunday has been moved to the bottom
-    if (tbody.rows[0] !== sundayRow) return;
-
     try {
-        realignGraph(tbody, sundayRow);
+        realignGraph(tbody, tbody.rows[0]);
     } catch (err) {
         console.error('[Contribution Graph Realignment] Failed during DOM manipulation:', err);
     }
 }
 
 function validateGraph(tbody) {
+    if (!tbody) {
+        console.error('[Contribution Graph Realignment] Failed: Contribution graph tbody not found.');
+        return false;
+    }
+
     if (tbody.rows.length !== 7) {
         console.error('[Contribution Graph Realignment] Failed: Contribution graph does not have 7 rows. Found:', tbody.rows.length);
         return false;
@@ -43,8 +34,14 @@ function validateGraph(tbody) {
         return false;
     }
 
-    if (!getLabelSpan(firstRow)) {
+    const span = getDayLabel(firstRow);
+    if (!span) {
         console.error('[Contribution Graph Realignment] Failed: No label span found in first row.');
+        return false;
+    }
+
+    if (span.textContent.trim() !== 'Sun') {
+        console.error('[Contribution Graph Realignment] Failed: First row is not labeled "Sun". Found:', span.textContent.trim());
         return false;
     }
 
@@ -68,14 +65,6 @@ function realignGraph(tbody, sundayRow) {
         const newStyle = span.getAttribute('style').replace('Circle(0)', 'None');
         span.setAttribute('style', newStyle);
     }
-}
-
-function getSundayRow(tbody) {
-    for (const row of tbody.rows) {
-        const span = getLabelSpan(row);
-        if (span && span.textContent.trim() === 'Sun') return row;
-    }
-    return null;
 }
 
 function getDayLabel(row) {
