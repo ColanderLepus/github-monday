@@ -81,7 +81,7 @@ function getSundayRow(tbody) {
 }
 
 function getLabelSpan(row) {
-    return row.cells[0].querySelector('span[aria-hidden="true"]');
+    return row.cells[0]?.querySelector('span[aria-hidden="true"]') ?? null;
 }
 // #endregion
 
