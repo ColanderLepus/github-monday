@@ -28,20 +28,16 @@ function validateGraph(tbody) {
     }
 
     const firstRow = tbody.rows[0];
+    const span = getDayLabel(firstRow);
+
+    // Silent return — row 0 not being Sunday means the graph is already corrected.
+    // This fires on every subsequent mutation after realignment, so logging here would spam the console.
+    if (!span || span.textContent.trim() !== 'Sun') return false;
+
     if (firstRow.cells.length < 2) {
         console.error('[Contribution Graph Realignment] Failed: Sunday row does not have enough cells to shift contribution data.');
         return false;
     }
-
-    const span = getDayLabel(firstRow);
-    if (!span) {
-        console.error('[Contribution Graph Realignment] Failed: No label span found in first row.');
-        return false;
-    }
-
-    // Silent return — row 0 not being Sunday means the graph is already corrected.
-    // This fires on every subsequent mutation after realignment, so logging here would spam the console.
-    if (span.textContent.trim() !== 'Sun') return false;
 
     return true;
 }
