@@ -3,25 +3,30 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Contribution Graph Realignment Tool Options</title>
+    <title>Contribution Graph Realignment Tool</title>
     <style>
         body {
             font-family: sans-serif;
-            margin: 2em;
+            margin: 1em;
+            width: 250px;
         }
 
-        label {
-            font-size: 1.1em;
+        #status {
+            color: grey;
+            font-size: 0.9em;
+            display: none;
         }
     </style>
 </head>
 
 <body>
-    <h2>Extension Options</h2>
     <label>
         <input type="checkbox" id="enableRealignment" />
         Enable Contribution Graph Realignment
     </label>
+    <p id="status">
+        Saved. Changes take effect on the next GitHub page load.
+    </p>
     <script src="options.js"></script>
 </body>
 
